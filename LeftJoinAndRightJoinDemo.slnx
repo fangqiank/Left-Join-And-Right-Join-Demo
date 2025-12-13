@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="LeftJoinAndRightJoinDemo.AppHost/LeftJoinAndRightJoinDemo.AppHost.csproj" />
+  <Project Path="LeftJoinAndRightJoinDemo.ServiceDefaults/LeftJoinAndRightJoinDemo.ServiceDefaults.csproj" />
+  <Project Path="LeftJoinAndRightJoinDemo/LeftJoinAndRightJoinDemo.csproj" />
+</Solution>
