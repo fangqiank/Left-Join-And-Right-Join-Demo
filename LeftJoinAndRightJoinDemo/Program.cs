@@ -39,7 +39,7 @@ app.MapGet("/products/with-reviews", (AppDbContext dbContext) =>
 {
     var query = dbContext.Products
         .Where(p => p.IsActive)
-        .AsEnumerable()
+        //.AsEnumerable()
         .LeftJoin(
             dbContext.Reviews,
             product => product.Id,
@@ -61,26 +61,47 @@ app.MapGet("/products/with-reviews", (AppDbContext dbContext) =>
     return Results.Ok(results);
 });
 
-// 2. Using custom RIGHT JOIN: Get all reviews including those for non-existent products
+// 2. Using custom RIGHT JOIN: Get all reviews including those for non-existent products(不加AsEnumerable(),会报错)
+//app.MapGet("/reviews/right-join", (AppDbContext dbContext) =>
+//{
+//    var query = dbContext.Products
+//        .AsEnumerable()
+//        .RightJoin(
+//            dbContext.Reviews,
+//            product => product.Id,
+//            review => review.ProductId,
+//            (product, review) => new ProductReviewDto
+//            {
+//                ProductId = product != null ? product.Id : 0,
+//                ProductName = product != null ? product.Name : "Product Not Found",
+//                ProductPrice = product != null ? product.Price : 0,
+//                ReviewId = review.Id,
+//                ReviewTitle = review.Title,
+//                ReviewRating = review.Rating,
+//                ReviewerName = review.ReviewerName
+//            })
+//        .OrderBy(r => r.ReviewId);
+
+//    var results = query.ToList();
+//    return Results.Ok(results);
+//});
 app.MapGet("/reviews/right-join", (AppDbContext dbContext) =>
 {
-    var query = dbContext.Products
-        .AsEnumerable()
-        .RightJoin(
-            dbContext.Reviews,
-            product => product.Id,
-            review => review.ProductId,
-            (product, review) => new ProductReviewDto
-            {
-                ProductId = product != null ? product.Id : 0,
-                ProductName = product != null ? product.Name : "Product Not Found",
-                ProductPrice = product != null ? product.Price : 0,
-                ReviewId = review.Id,
-                ReviewTitle = review.Title,
-                ReviewRating = review.Rating,
-                ReviewerName = review.ReviewerName
-            })
-        .OrderBy(r => r.ReviewId);
+    var query = from review in dbContext.Reviews
+                join product in dbContext.Products
+                on review.ProductId equals product.Id into productGroup
+                from product in productGroup.DefaultIfEmpty()
+                orderby review.Id
+                select new ProductReviewDto
+                {
+                    ProductId = product != null ? product.Id : 0,
+                    ProductName = product != null ? product.Name : "Product Not Found",
+                    ProductPrice = product != null ? product.Price : 0,
+                    ReviewId = review.Id,
+                    ReviewTitle = review.Title,
+                    ReviewRating = review.Rating,
+                    ReviewerName = review.ReviewerName
+                };
 
     var results = query.ToList();
     return Results.Ok(results);
@@ -173,7 +194,6 @@ app.MapGet("/products/left-join-filtered", (AppDbContext dbContext) =>
 {
     var query = dbContext.Products
         .Where(p => p.IsActive && p.Price > 100)
-        .AsEnumerable()
         .LeftJoin(
             dbContext.Reviews.Where(r => r.Rating >= 4),
             product => product.Id,
@@ -204,7 +224,6 @@ app.MapGet("/products/left-join-multi", (AppDbContext dbContext) =>
 
     var query = dbContext.Products
         .Where(p => p.IsActive)
-        .AsEnumerable()
         .LeftJoin(
             dbContext.Reviews.Where(r => r.ReviewDate >= recentDate),
             product => product.Id,
@@ -242,7 +261,6 @@ app.MapGet("/products/best-reviews", (AppDbContext dbContext) =>
 
     var query = dbContext.Products
         .Where(p => p.IsActive)
-        .AsEnumerable()
         .LeftJoin(
             bestRatings,
             product => product.Id,
